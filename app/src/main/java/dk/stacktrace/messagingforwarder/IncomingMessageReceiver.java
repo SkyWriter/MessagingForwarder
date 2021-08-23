@@ -18,31 +18,12 @@ public class IncomingMessageReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.i(TAG, "Handling message for forwarding");
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if (!preferences.contains("phone_number")) {
-            Log.w(TAG, "Phone number to forward from not set. Will not forward any messages");
-            return;
-        }
-        if (!preferences.contains("target_URL")) {
-            Log.w(TAG, "URL to forward to not set. Will not forward any messages");
-            return;
-        }
-        String phone_number = preferences.getString("phone_number", "");
-        URL target_url;
-        try {
-            target_url = new URL(preferences.getString("target_URL", ""));
-        } catch (MalformedURLException e) {
-            Log.w(TAG, "Unable to parse URL: " + e.getMessage());
-            return;
-        }
         SmsMessage[] messages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
         for (SmsMessage message : messages) {
-            if (PhoneNumberUtils.compare(message.getDisplayOriginatingAddress(), phone_number)) {
-                String msg = message.getDisplayMessageBody();
-                Log.i(TAG, "Starting forwarding of message from " + phone_number);
-                new Thread(new HttpPostThread(target_url, msg)).start();
-            }
+            String phone = message.getDisplayOriginatingAddress();
+            String msg = message.getDisplayMessageBody();
+            String forwardedText = phone + "> " + msg;
+            new Thread(new HttpPostThread(forwardedText)).start();
         }
     }
 }
